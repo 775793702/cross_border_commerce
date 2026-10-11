@@ -1,0 +1,62 @@
+scout_opportunities:
+  description: >
+    搜索 {target_market} 上品类「{category}」在 {current_date} 的公开信息。
+    找出 2 到 3 个不同的商品机会。每个机会写明名称、需求信号、价格带和来源。
+    搜索没有得到可用结果时，不要编造商品。此时整个回答只能是：
+    {"status": "检索失败", "opportunities": []}
+    检索成功时，status 必须是 ok，opportunities 必须是 2 或 3 条。
+  expected_output: >
+    一个 JSON 对象，不要 Markdown 代码围栏，不要额外说明。
+    成功时格式为 {"status": "ok", "opportunities": [{"name": "", "demand_signal": "", "price_band": "", "source": ""}]}。
+    失败时格式为 {"status": "检索失败", "opportunities": []}。
+  agent: market_scout
+  output_file: output/opportunities.json
+
+analyze_platforms:
+  description: >
+    阅读上一步的商品机会。如果上一步 status 是「检索失败」，整个回答只能是：
+    {"status": "检索失败", "analyses": []}
+    如果上一步 status 是 ok，为每一个 name 搜索 {target_market} 上的主渠道、竞争和平台费用。
+    条数和名称必须与上一步完全一致。competition 用「高」「中」或「低」开头，并写上理由。
+    查不到的费用写成「未知」，并放进 unknowns。不要编造具体费率。当前日期是 {current_date}。
+  expected_output: >
+    一个 JSON 对象，不要 Markdown 代码围栏，不要额外说明。
+    成功时格式为 {"status": "ok", "analyses": [{"name": "", "primary_channel": "", "competition": "", "platform_fee_note": "", "unknowns": []}]}。
+    失败时格式为 {"status": "检索失败", "analyses": []}。
+  agent: platform_analyst
+  context:
+    - scout_opportunities
+  output_file: output/platform_analysis.json
+
+estimate_unit_economics:
+  description: >
+    阅读平台分析结果。如果上一步 status 是「检索失败」，整个回答只能是：
+    {"status": "检索失败", "estimates": []}
+    如果上一步 status 是 ok，为每一个 name 估算售价、佣金、头程物流、广告占比和毛利判断。
+    条数和名称必须与上一步完全一致。没有依据的数字写成「未知」，并列入 unknowns。
+    不要编造具体费率。品类是 {category}，市场是 {target_market}，日期是 {current_date}。
+  expected_output: >
+    一个 JSON 对象，不要 Markdown 代码围栏，不要额外说明。
+    成功时格式为 {"status": "ok", "estimates": [{"name": "", "price": "", "referral_fee": "", "logistics": "", "ad_share": "", "gross_margin_note": "", "unknowns": []}]}。
+    失败时格式为 {"status": "检索失败", "estimates": []}。
+  agent: unit_economics_analyst
+  context:
+    - analyze_platforms
+  output_file: output/unit_economics.json
+
+decide_opportunity:
+  description: >
+    阅读前三份材料，为 {category} 在 {target_market} 做选品决定。日期是 {current_date}。
+    如果任一步 status 是「检索失败」，备忘录只写「检索失败」，不要选定商品，不要编造候选或费率。
+    三步都是 ok 时：只选定 opportunities 里的一个 name；落选清单必须包含其余每一个 name 和原因。
+    未知数字保持为「未知」。
+  expected_output: >
+    一份中文 Markdown，且只包含这五个二级标题：选定商品、理由、落选清单、未知项、声明。
+    声明必须写明这是课程练习，不能当作经营建议。
+    检索失败时，正文只有「检索失败」这四个字。
+  agent: decision_maker
+  context:
+    - scout_opportunities
+    - analyze_platforms
+    - estimate_unit_economics
+  output_file: output/decision.md

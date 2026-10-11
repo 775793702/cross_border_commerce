@@ -1,0 +1,26 @@
+[project]
+name = "cross_border_commerce"
+version = "0.1.0"
+description = "跨境电商商业分析 using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]==1.14.4"
+]
+
+[project.scripts]
+cross_border_commerce = "cross_border_commerce.main:run"
+run_crew = "cross_border_commerce.main:run"
+train = "cross_border_commerce.main:train"
+replay = "cross_border_commerce.main:replay"
+test = "cross_border_commerce.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cross_border_commerce"]
